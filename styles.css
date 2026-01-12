@@ -1,0 +1,263 @@
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #14161d;
+  --muted: #5c6370;
+  --border: #e2e4ea;
+  --primary: #4d4dff;
+  --accent: #1f1f5c;
+  --shadow: 0 24px 60px rgba(23, 32, 64, 0.08);
+  --button-bg: #f2f3f7;
+  --table-head: #f8f9fb;
+}
+
+body[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0c0f1a;
+  --card: #151a2b;
+  --text: #f4f5f7;
+  --muted: #a2a8b3;
+  --border: #262b3c;
+  --primary: #6f7bff;
+  --accent: #c6ccff;
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  --button-bg: #1f2435;
+  --table-head: #1a2032;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 40px;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 36px;
+  margin: 8px 0 4px;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.badge {
+  background: #eef0ff;
+  color: var(--primary);
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 24px;
+  border: 1px solid var(--border);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.filters {
+  flex-direction: column;
+  gap: 16px;
+  display: none;
+}
+
+.filters.active {
+  display: flex;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px 24px;
+}
+
+.cycle-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px 24px;
+  align-items: start;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+input {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  background: transparent;
+  color: var(--text);
+}
+
+select {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  background: transparent;
+  color: var(--text);
+}
+
+small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+button {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  background: var(--button-bg);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+}
+
+button.primary {
+  background: var(--primary);
+  color: white;
+  border-color: transparent;
+}
+
+button.ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.table-wrapper {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+th {
+  background: var(--table-head);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+}
