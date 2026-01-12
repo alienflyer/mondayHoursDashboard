@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Monday Hours Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div>
+          <p class="eyebrow">Monday.com</p>
+          <h1>Hours Dashboard</h1>
+          <p class="subtitle">
+            Visualize hours per user per board and export combined raw data.
+          </p>
+        </div>
+        <div class="badge">Local-only</div>
+      </header>
+
+      <section class="card">
+        <h2>Connect to Monday</h2>
+        <form id="config-form">
+          <label>
+            <span>Monday API token</span>
+            <input
+              type="password"
+              name="token"
+              placeholder="paste your token"
+              required
+            />
+          </label>
+          <label>
+            <span>Board IDs (optional)</span>
+            <input
+              type="text"
+              name="boards"
+              placeholder="e.g. 123, 456 (leave blank for all)"
+            />
+            <small>Separate multiple IDs with commas.</small>
+          </label>
+          <label>
+            <span>Time tracking column ID (optional)</span>
+            <input type="text" name="timeColumn" placeholder="auto-detect" />
+          </label>
+          <label>
+            <span>People column ID (optional)</span>
+            <input type="text" name="peopleColumn" placeholder="auto-detect" />
+            <small>
+              Hours are attributed to item owners (people column). If multiple
+              people are assigned, hours are split evenly.
+            </small>
+          </label>
+          <div class="actions">
+            <button type="submit" class="primary">Load dashboard</button>
+            <button type="button" id="export-btn" disabled>Export CSV</button>
+          </div>
+          <p class="status" id="status">Enter your token to begin.</p>
+        </form>
+      </section>
+
+      <section class="grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>Hours per user per board</h2>
+            <div class="legend" id="chart-legend"></div>
+          </div>
+          <canvas id="hours-chart" height="220"></canvas>
+        </div>
+        <div class="card">
+          <h2>Combined raw hours</h2>
+          <div class="table-wrapper">
+            <table id="data-table">
+              <thead>
+                <tr>
+                  <th>Board</th>
+                  <th>Item</th>
+                  <th>User</th>
+                  <th>Hours</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <p>
+          This dashboard runs entirely in your browser. It only sends requests
+          to the Monday API.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
