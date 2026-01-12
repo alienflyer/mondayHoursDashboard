@@ -5,141 +5,230 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Monday Hours Dashboard</title>
     <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body data-theme="dark">
-    <div class="app">
-      <header>
-        <div>
-          <p class="eyebrow">Monday.com</p>
-          <h1>Hours Dashboard</h1>
-          <p class="subtitle">
-            Visualize hours per user per board and export combined raw data.
-          </p>
-        </div>
-        <div class="header-actions">
-          <div class="badge">Local-only</div>
-          <button type="button" id="theme-toggle" class="ghost">
-            Switch to light mode
-          </button>
-        </div>
-      </header>
-
-      <section class="card">
-        <h2>Connect to Monday</h2>
-        <form id="config-form">
-          <label>
-            <span>Monday API token</span>
-            <input
-              type="password"
-              name="token"
-              placeholder="paste your token"
-              required
-            />
-          </label>
-          <label>
-            <span>Board IDs (optional)</span>
-            <input
-              type="text"
-              name="boards"
-              placeholder="e.g. 123, 456 (leave blank for all)"
-            />
-            <small>Separate multiple IDs with commas.</small>
-          </label>
-          <label>
-            <span>Time tracking column ID (optional)</span>
-            <input type="text" name="timeColumn" placeholder="auto-detect" />
-          </label>
-          <label>
-            <span>People column ID (optional)</span>
-            <input type="text" name="peopleColumn" placeholder="auto-detect" />
-            <small>
-              Hours are attributed to item owners (people column). If multiple
-              people are assigned, hours are split evenly.
-            </small>
-          </label>
-          <div class="actions">
-            <button type="submit" class="primary">Load dashboard</button>
-            <button type="button" id="export-btn" disabled>Export CSV</button>
+    <div class="layout">
+      <div class="app">
+        <header>
+          <div>
+            <p class="eyebrow">Monday.com</p>
+            <h1>Hours Dashboard</h1>
+            <p class="subtitle">
+              Visualize hours per user per board and export combined raw data.
+            </p>
           </div>
-          <p class="status" id="status">Enter your token to begin.</p>
-        </form>
-      </section>
+          <div class="header-actions">
+            <div class="header-top-row">
+              <div class="badge">Local-only</div>
+              <button type="button" id="theme-toggle" class="ghost">
+                Switch to light mode
+              </button>
+            </div>
+            <button
+              type="button"
+              id="debug-toggle"
+              class="debug-toggle debug-toggle-header"
+              aria-expanded="true"
+              aria-controls="debug-panel"
+            >
+              <span class="debug-toggle-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" role="presentation">
+                  <path
+                    d="M4 5h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-6l-3 3-3-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm2 3v2h12V8H6zm0 4v2h8v-2H6z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </span>
+              <span class="debug-toggle-caret">&gt;</span>
+            </button>
+          </div>
+        </header>
 
-      <section class="card filters" id="filters-section">
-        <h2>Filters</h2>
-        <div class="filters-grid">
-          <label>
-            <span>Project (board)</span>
-            <select id="project-filter">
-              <option value="all">All projects</option>
-            </select>
-          </label>
-          <label>
-            <span>Time period</span>
-            <select id="period-filter">
-              <option value="all">All time</option>
-              <option value="month">Monthly</option>
-              <option value="week">Weekly</option>
-              <option value="year">Yearly</option>
-            </select>
-          </label>
-          <label>
-            <span>Pick month</span>
-            <input type="month" id="month-picker" />
-          </label>
-          <label>
-            <span>Pick week (Monday)</span>
-            <input type="date" id="week-picker" />
-          </label>
-          <label>
-            <span>Pick year</span>
-            <input type="number" id="year-picker" min="2000" max="2100" />
-          </label>
-          <div class="cycle-controls">
-            <span>Cycle period</span>
+        <section class="card">
+          <h2>Connect to Monday</h2>
+          <form id="config-form">
+            <label class="full-span">
+              <span>Monday API token</span>
+              <input
+                type="password"
+                name="token"
+                placeholder="paste your token"
+                required
+              />
+            </label>
+            <label>
+              <span>Workspace</span>
+              <select id="workspace-filter" multiple>
+                <option value="all">All workspaces</option>
+              </select>
+            </label>
+            <label>
+              <span>Board</span>
+              <select id="board-filter" multiple>
+                <option value="all">All boards</option>
+              </select>
+            </label>
+            <label class="checkbox full-span">
+              <span>All dates</span>
+              <input type="checkbox" id="all-data" checked />
+            </label>
+            <label>
+              <span>Start date</span>
+              <input type="date" id="start-date" />
+              <small>Set a range or check All dates.</small>
+            </label>
+            <label>
+              <span>End date</span>
+              <input type="date" id="end-date" />
+            </label>
+            <p class="status" id="status">Enter your token to begin.</p>
             <div class="actions">
-              <button type="button" id="prev-period">Previous</button>
-              <button type="button" id="next-period">Next</button>
+              <button type="button" id="load-workspaces">Load workspaces</button>
+              <button type="submit" class="primary">Load hours data</button>
+              <button type="button" id="export-btn" disabled>Export CSV</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card filters" id="filters-section">
+          <h2>Filters</h2>
+          <div class="filters-grid">
+            <label>
+              <span>User</span>
+              <select id="user-filter">
+                <option value="all">All users</option>
+              </select>
+            </label>
+            <label>
+              <span>Boards</span>
+              <select id="project-filter">
+                <option value="all">All boards</option>
+              </select>
+            </label>
+            <label>
+              <span>Time period</span>
+              <select id="period-filter">
+                <option value="all">All time</option>
+                <option value="day">Daily</option>
+                <option value="week">Weekly</option>
+                <option value="month" selected>Monthly</option>
+                <option value="year">Yearly</option>
+              </select>
+            </label>
+            <div class="cycle-controls">
+              <div class="cycle-nav">
+                <button type="button" id="prev-period" class="cycle-arrow" aria-label="Previous period">
+                  &lsaquo;
+                </button>
+                <div class="cycle-labels">
+                  <span id="cycle-label" class="cycle-label">All time</span>
+                  <button type="button" id="jump-current" class="cycle-jump">
+                    Jump to current period
+                  </button>
+                </div>
+                <button type="button" id="next-period" class="cycle-arrow" aria-label="Next period">
+                  &rsaquo;
+                </button>
+              </div>
+            </div>
+            <label class="checkbox full-span">
+              <span>Show raw time entries only</span>
+              <input type="checkbox" id="raw-entries-only" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card-grid">
+          <div class="card">
+            <h2>Hours</h2>
+            <div class="metrics">
+              <div class="metric">
+                <span class="metric-label">Total workspaces</span>
+                <span class="metric-value" id="metric-workspaces">0</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Total boards</span>
+                <span class="metric-value" id="metric-projects">0</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Total users</span>
+                <span class="metric-value" id="metric-users">0</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Total hours</span>
+                <span class="metric-value" id="metric-hours">0.00</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Total records pulled</span>
+                <span class="metric-value" id="metric-records">0</span>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table id="data-table">
+                <thead>
+                  <tr>
+                    <th>Workspace</th>
+                    <th>Board</th>
+                    <th>Item</th>
+                    <th>User</th>
+                    <th>Duration</th>
+                    <th>Start</th>
+                    <th>End</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
             </div>
           </div>
-        </div>
-      </section>
 
-      <section class="grid">
-        <div class="card">
-          <div class="card-header">
-            <h2>Hours per user per board</h2>
-            <div class="legend" id="chart-legend"></div>
+          <div class="card user-totals-card">
+            <div class="card-header">
+              <div>
+                <h2>User totals</h2>
+                <p class="subtitle">Totals for the current filters.</p>
+              </div>
+            </div>
+            <div class="user-totals" id="user-totals"></div>
           </div>
-          <canvas id="hours-chart" height="220"></canvas>
-        </div>
-        <div class="card">
-          <h2>Combined raw hours</h2>
-          <div class="table-wrapper">
-            <table id="data-table">
-              <thead>
-                <tr>
-                  <th>Board</th>
-                  <th>Item</th>
-                  <th>User</th>
-                  <th>Hours</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <footer>
-        <p>
-          This dashboard runs entirely in your browser. It only sends requests
-          to the Monday API.
-        </p>
-      </footer>
+        <footer>
+          <p>
+            This dashboard runs entirely in your browser. It only sends requests
+            to the Monday API.
+          </p>
+        </footer>
+      </div>
+
+      <aside class="debug-panel card" id="debug-panel">
+        <div class="debug-header">
+          <div>
+            <h2>Debug log</h2>
+            <p class="subtitle">Calls and responses in this session.</p>
+          </div>
+        </div>
+        <div class="debug-actions">
+          <button type="button" id="copy-debug" class="ghost">Copy all</button>
+          <button type="button" id="clear-debug" class="ghost">Clear</button>
+          <div class="debug-metric">
+            <span class="debug-metric-label">Last load</span>
+            <span class="debug-metric-value" id="last-load-time">--</span>
+          </div>
+          <div class="debug-metric">
+            <span class="debug-metric-label">Last load requests</span>
+            <span class="debug-metric-value" id="last-load-requests">0</span>
+          </div>
+        </div>
+        <textarea id="debug-output" class="debug-output" readonly></textarea>
+      </aside>
+    </div>
+
+    <div class="loading-overlay" id="loading-overlay" aria-live="polite">
+      <div class="loading-indicator" id="loading-indicator">
+        <span class="spinner" aria-hidden="true"></span>
+        Loading data from Monday...
+      </div>
     </div>
   </body>
 </html>
