@@ -3,9 +3,22 @@ const statusEl = document.getElementById("status");
 const exportBtn = document.getElementById("export-btn");
 const tableBody = document.querySelector("#data-table tbody");
 const legendEl = document.getElementById("chart-legend");
+const themeToggle = document.getElementById("theme-toggle");
+const filtersSection = document.getElementById("filters-section");
+const projectFilter = document.getElementById("project-filter");
+const periodFilter = document.getElementById("period-filter");
+const monthPicker = document.getElementById("month-picker");
+const weekPicker = document.getElementById("week-picker");
+const yearPicker = document.getElementById("year-picker");
+const prevPeriodBtn = document.getElementById("prev-period");
+const nextPeriodBtn = document.getElementById("next-period");
 
 let chart;
 let exportRows = [];
+let allRows = [];
+let boardsCache = [];
+let currentPeriod = "all";
+let currentDate = new Date();
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -38,6 +51,19 @@ const parseHours = (value) => {
     return parsed.duration / 3600000;
   } catch (error) {
     return 0;
+  }
+};
+
+const parseStartDate = (value) => {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || !parsed.startTime) return null;
+    const date = new Date(parsed.startTime);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  } catch (error) {
+    return null;
   }
 };
 
@@ -120,13 +146,17 @@ const renderTable = (rows) => {
   tableBody.innerHTML = "";
   rows.forEach((row) => {
     const tr = document.createElement("tr");
-    [row.boardName, row.itemName, row.personName, row.hours.toFixed(2)].forEach(
-      (value) => {
-        const td = document.createElement("td");
-        td.textContent = value;
-        tr.appendChild(td);
-      }
-    );
+    [
+      row.boardName,
+      row.itemName,
+      row.personName,
+      row.hours.toFixed(2),
+      row.dateLabel || "—",
+    ].forEach((value) => {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    });
     tableBody.appendChild(tr);
   });
 };
@@ -241,9 +271,7 @@ const loadBoards = async (token, boardIds) => {
 };
 
 const buildDashboard = ({ boards, timeColumnInput, peopleColumnInput }) => {
-  const userTotals = new Map();
-  const boardTotals = new Map();
-  exportRows = [];
+  allRows = [];
 
   boards.forEach((board) => {
     const timeColumnId =
@@ -262,6 +290,7 @@ const buildDashboard = ({ boards, timeColumnInput, peopleColumnInput }) => {
         (column) => column.id === timeColumnId
       );
       const hours = parseHours(timeValue?.value);
+      const startDate = parseStartDate(timeValue?.value);
       if (!hours) return;
 
       const peopleValue = peopleColumnId
@@ -278,14 +307,10 @@ const buildDashboard = ({ boards, timeColumnInput, peopleColumnInput }) => {
           personId: "unassigned",
           personName: "Unassigned",
           hours,
+          date: startDate,
+          dateLabel: startDate ? startDate.toLocaleDateString() : "",
         };
-        exportRows.push(row);
-        const key = `${board.id}|${row.personId}`;
-        const prev = boardTotals.get(key) || 0;
-        boardTotals.set(key, prev + hours);
-        if (!userTotals.has(row.personId)) {
-          userTotals.set(row.personId, row.personName);
-        }
+        allRows.push(row);
         return;
       }
 
@@ -299,23 +324,135 @@ const buildDashboard = ({ boards, timeColumnInput, peopleColumnInput }) => {
           personId: person.id,
           personName: person.name,
           hours: splitHours,
+          date: startDate,
+          dateLabel: startDate ? startDate.toLocaleDateString() : "",
         };
-        exportRows.push(row);
-        const key = `${board.id}|${person.id}`;
-        const prev = boardTotals.get(key) || 0;
-        boardTotals.set(key, prev + splitHours);
-        if (!userTotals.has(person.id)) {
-          userTotals.set(person.id, person.name);
-        }
+        allRows.push(row);
       });
     });
+  });
+
+  boardsCache = boards.map((board) => ({ id: board.id, name: board.name }));
+  populateProjectFilter(boardsCache);
+  applyFilters();
+};
+
+const exportCsv = () => {
+  if (!exportRows.length) return;
+  const headers = [
+    "board_id",
+    "board_name",
+    "item_id",
+    "item_name",
+    "person_id",
+    "person_name",
+    "hours",
+    "date",
+  ];
+  const lines = [headers.join(",")];
+  exportRows.forEach((row) => {
+    const line = [
+      row.boardId,
+      `"${row.boardName.replace(/"/g, '""')}"`,
+      row.itemId,
+      `"${row.itemName.replace(/"/g, '""')}"`,
+      row.personId,
+      `"${row.personName.replace(/"/g, '""')}"`,
+      row.hours.toFixed(2),
+      row.date ? row.date.toISOString() : "",
+    ];
+    lines.push(line.join(","));
+  });
+
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "monday-hours-export.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
+const populateProjectFilter = (boards) => {
+  projectFilter.innerHTML = "";
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.textContent = "All projects";
+  projectFilter.appendChild(allOption);
+
+  boards.forEach((board) => {
+    const option = document.createElement("option");
+    option.value = board.id;
+    option.textContent = board.name;
+    projectFilter.appendChild(option);
+  });
+};
+
+const startOfWeek = (date) => {
+  const copy = new Date(date);
+  const day = copy.getDay();
+  const diff = copy.getDate() - day + (day === 0 ? -6 : 1);
+  copy.setDate(diff);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+};
+
+const endOfWeek = (date) => {
+  const start = startOfWeek(date);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return end;
+};
+
+const getPeriodRange = (period, date) => {
+  if (period === "month") {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+    return { start, end };
+  }
+  if (period === "week") {
+    return { start: startOfWeek(date), end: endOfWeek(date) };
+  }
+  if (period === "year") {
+    const start = new Date(date.getFullYear(), 0, 1);
+    const end = new Date(date.getFullYear(), 11, 31, 23, 59, 59);
+    return { start, end };
+  }
+  return null;
+};
+
+const applyFilters = () => {
+  const projectId = projectFilter.value;
+  const period = currentPeriod;
+  const range = getPeriodRange(period, currentDate);
+
+  exportRows = allRows.filter((row) => {
+    if (projectId !== "all" && row.boardId !== projectId) {
+      return false;
+    }
+    if (!range) return true;
+    if (!row.date) return false;
+    return row.date >= range.start && row.date <= range.end;
+  });
+
+  const userTotals = new Map();
+  const boardTotals = new Map();
+  exportRows.forEach((row) => {
+    const key = `${row.boardId}|${row.personId}`;
+    boardTotals.set(key, (boardTotals.get(key) || 0) + row.hours);
+    if (!userTotals.has(row.personId)) {
+      userTotals.set(row.personId, row.personName);
+    }
   });
 
   const users = Array.from(userTotals.entries()).map(([id, name]) => ({
     id,
     name,
   }));
-  const boardsList = boards.map((board) => ({ id: board.id, name: board.name }));
+  const boards = boardsCache.filter(
+    (board) => projectId === "all" || board.id === projectId
+  );
 
   const palette = [
     "#4d4dff",
@@ -327,7 +464,7 @@ const buildDashboard = ({ boards, timeColumnInput, peopleColumnInput }) => {
     "#9d50ff",
   ];
 
-  const datasets = boardsList.map((board, index) => {
+  const datasets = boards.map((board, index) => {
     const data = users.map((user) =>
       boardTotals.get(`${board.id}|${user.id}`) || 0
     );
@@ -343,38 +480,54 @@ const buildDashboard = ({ boards, timeColumnInput, peopleColumnInput }) => {
   exportBtn.disabled = exportRows.length === 0;
 };
 
-const exportCsv = () => {
-  if (!exportRows.length) return;
-  const headers = [
-    "board_id",
-    "board_name",
-    "item_id",
-    "item_name",
-    "person_id",
-    "person_name",
-    "hours",
-  ];
-  const lines = [headers.join(",")];
-  exportRows.forEach((row) => {
-    const line = [
-      row.boardId,
-      `"${row.boardName.replace(/"/g, '""')}"`,
-      row.itemId,
-      `"${row.itemName.replace(/"/g, '""')}"`,
-      row.personId,
-      `"${row.personName.replace(/"/g, '""')}"`,
-      row.hours.toFixed(2),
-    ];
-    lines.push(line.join(","));
-  });
+const updatePeriodInputs = () => {
+  monthPicker.disabled = currentPeriod !== "month";
+  weekPicker.disabled = currentPeriod !== "week";
+  yearPicker.disabled = currentPeriod !== "year";
 
-  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "monday-hours-export.csv";
-  link.click();
-  URL.revokeObjectURL(url);
+  if (currentPeriod === "month") {
+    monthPicker.value = `${currentDate.getFullYear()}-${String(
+      currentDate.getMonth() + 1
+    ).padStart(2, "0")}`;
+  }
+  if (currentPeriod === "week") {
+    const weekStart = startOfWeek(currentDate);
+    weekPicker.value = weekStart.toISOString().split("T")[0];
+  }
+  if (currentPeriod === "year") {
+    yearPicker.value = currentDate.getFullYear();
+  }
+  if (currentPeriod === "all") {
+    monthPicker.value = "";
+    weekPicker.value = "";
+    yearPicker.value = "";
+  }
+};
+
+const shiftPeriod = (direction) => {
+  if (currentPeriod === "month") {
+    currentDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + direction,
+      1
+    );
+  } else if (currentPeriod === "week") {
+    currentDate = new Date(currentDate);
+    currentDate.setDate(currentDate.getDate() + direction * 7);
+  } else if (currentPeriod === "year") {
+    currentDate = new Date(currentDate.getFullYear() + direction, 0, 1);
+  }
+  updatePeriodInputs();
+  applyFilters();
+};
+
+const initTheme = () => {
+  const body = document.body;
+  const isDark = body.dataset.theme !== "light";
+  body.dataset.theme = isDark ? "dark" : "light";
+  themeToggle.textContent = isDark
+    ? "Switch to light mode"
+    : "Switch to dark mode";
 };
 
 form.addEventListener("submit", async (event) => {
@@ -411,9 +564,52 @@ form.addEventListener("submit", async (event) => {
     });
 
     setStatus("Dashboard ready. Export is available below.");
+    filtersSection.classList.add("active");
+    updatePeriodInputs();
   } catch (error) {
     setStatus(`Error: ${error.message}`, "error");
   }
 });
 
 exportBtn.addEventListener("click", exportCsv);
+
+themeToggle.addEventListener("click", () => {
+  const body = document.body;
+  const nextTheme = body.dataset.theme === "dark" ? "light" : "dark";
+  body.dataset.theme = nextTheme;
+  themeToggle.textContent =
+    nextTheme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+});
+
+projectFilter.addEventListener("change", applyFilters);
+
+periodFilter.addEventListener("change", (event) => {
+  currentPeriod = event.target.value;
+  updatePeriodInputs();
+  applyFilters();
+});
+
+monthPicker.addEventListener("change", (event) => {
+  if (!event.target.value) return;
+  const [year, month] = event.target.value.split("-").map(Number);
+  currentDate = new Date(year, month - 1, 1);
+  applyFilters();
+});
+
+weekPicker.addEventListener("change", (event) => {
+  if (!event.target.value) return;
+  currentDate = new Date(event.target.value);
+  applyFilters();
+});
+
+yearPicker.addEventListener("change", (event) => {
+  const year = Number(event.target.value);
+  if (!year) return;
+  currentDate = new Date(year, 0, 1);
+  applyFilters();
+});
+
+prevPeriodBtn.addEventListener("click", () => shiftPeriod(-1));
+nextPeriodBtn.addEventListener("click", () => shiftPeriod(1));
+
+initTheme();

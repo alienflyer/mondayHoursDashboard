@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
     <script src="app.js" defer></script>
   </head>
-  <body>
+  <body data-theme="dark">
     <div class="app">
       <header>
         <div>
@@ -18,7 +18,12 @@
             Visualize hours per user per board and export combined raw data.
           </p>
         </div>
-        <div class="badge">Local-only</div>
+        <div class="header-actions">
+          <div class="badge">Local-only</div>
+          <button type="button" id="theme-toggle" class="ghost">
+            Switch to light mode
+          </button>
+        </div>
       </header>
 
       <section class="card">
@@ -62,6 +67,46 @@
         </form>
       </section>
 
+      <section class="card filters" id="filters-section">
+        <h2>Filters</h2>
+        <div class="filters-grid">
+          <label>
+            <span>Project (board)</span>
+            <select id="project-filter">
+              <option value="all">All projects</option>
+            </select>
+          </label>
+          <label>
+            <span>Time period</span>
+            <select id="period-filter">
+              <option value="all">All time</option>
+              <option value="month">Monthly</option>
+              <option value="week">Weekly</option>
+              <option value="year">Yearly</option>
+            </select>
+          </label>
+          <label>
+            <span>Pick month</span>
+            <input type="month" id="month-picker" />
+          </label>
+          <label>
+            <span>Pick week (Monday)</span>
+            <input type="date" id="week-picker" />
+          </label>
+          <label>
+            <span>Pick year</span>
+            <input type="number" id="year-picker" min="2000" max="2100" />
+          </label>
+          <div class="cycle-controls">
+            <span>Cycle period</span>
+            <div class="actions">
+              <button type="button" id="prev-period">Previous</button>
+              <button type="button" id="next-period">Next</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="grid">
         <div class="card">
           <div class="card-header">
@@ -80,6 +125,7 @@
                   <th>Item</th>
                   <th>User</th>
                   <th>Hours</th>
+                  <th>Date</th>
                 </tr>
               </thead>
               <tbody></tbody>
