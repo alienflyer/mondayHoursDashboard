@@ -1,0 +1,22 @@
+flowchart TD
+  Start["User opens dashboard"] --> Admin["Admin settings"]
+  Admin -->|Save| LS["localStorage"]
+
+  Start --> Workspaces["Load workspaces / users / boards"]
+  Workspaces --> MondayCall["POST /api/monday"]
+  MondayCall --> Filters["Populate filters"]
+
+  Start --> LoadHours["Load hours data"]
+  LoadHours --> MondayHours["POST /api/monday"]
+  MondayHours --> Normalize["Normalize Monday rows"]
+
+  Start --> LoadPto["Load PTO now"]
+  LoadPto --> PtoCall["GET /api/pto?url=..."]
+  PtoCall --> ParsePto["Parse PTO JSON rows"]
+  PtoCall -->|If failed + cache| CsvFallback["Use cached CSV"]
+  CsvFallback --> ParseCsv["Parse CSV rows"]
+
+  ParseCsv --> Merge["Merge PTO + Monday rows"]
+  ParsePto --> Merge
+  Normalize --> Merge
+  Merge --> Render["Render tables + user totals"]

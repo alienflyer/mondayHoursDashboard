@@ -1,0 +1,18 @@
+flowchart TB
+  Header["Header: title + theme + admin + debug"]
+  Connect["Connect card: workspace/board, dates, load/export"]
+  Summary["Load summary card"]
+  Filters["Filters card: user/board search, period, toggles"]
+  Grid["Card grid"]
+  Hours["Hours card: metrics + table"]
+  Totals["User totals card: teams + thresholds"]
+  Footer["Footer note"]
+  Debug["Debug panel: request log"]
+  Modals["Modals: Admin, Thresholds"]
+
+  Header --> Connect --> Filters --> Grid --> Footer
+  Connect --- Summary
+  Grid --> Hours
+  Grid --> Totals
+  Header --> Debug
+  Header --> Modals

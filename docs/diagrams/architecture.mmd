@@ -1,0 +1,12 @@
+flowchart LR
+  subgraph Browser["Browser (static UI)"]
+    UI["Dashboard UI<br/>index.html + app.js + styles.css"]
+    LS["localStorage<br/>tokens + settings + PTO cache"]
+    CSV["PTO CSV upload (optional)"]
+    UI <---> LS
+    UI --> CSV
+    UI --> Proxy["Local proxy<br/>dev_server.py"]
+  end
+
+  Proxy -->|POST /api/monday| Monday["Monday API v2"]
+  Proxy -->|GET /api/pto?url=...| Projector["Projector PTO JSON report"]

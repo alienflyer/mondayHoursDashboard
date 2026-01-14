@@ -12,10 +12,30 @@
       <div class="app">
         <header>
           <div>
-            <p class="eyebrow">Monday.com</p>
+            <div class="project-graphic" aria-hidden="true">
+              <svg viewBox="0 0 360 120" role="presentation">
+                <defs>
+                  <linearGradient id="graphic-sweep" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#1d4ed8" />
+                    <stop offset="55%" stop-color="#22d3ee" />
+                    <stop offset="100%" stop-color="#f59e0b" />
+                  </linearGradient>
+                  <linearGradient id="graphic-ring" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#3b82f6" />
+                    <stop offset="100%" stop-color="#14b8a6" />
+                  </linearGradient>
+                </defs>
+                <rect x="12" y="18" width="120" height="84" rx="42" fill="url(#graphic-sweep)" opacity="0.18" />
+                <circle cx="72" cy="60" r="34" fill="none" stroke="url(#graphic-ring)" stroke-width="10" />
+                <circle cx="72" cy="60" r="12" style="fill: var(--card);" />
+                <rect x="150" y="26" width="190" height="12" rx="6" fill="url(#graphic-sweep)" />
+                <rect x="150" y="50" width="150" height="12" rx="6" fill="url(#graphic-ring)" />
+                <rect x="150" y="74" width="110" height="12" rx="6" fill="url(#graphic-sweep)" opacity="0.7" />
+              </svg>
+            </div>
             <h1>Hours Dashboard</h1>
             <p class="subtitle">
-              Visualize hours per user per board and export combined raw data.
+              Visualize hours data across all Monday Dev boards and Projector PTO/Holiday entries
             </p>
           </div>
           <div class="header-actions">
@@ -25,6 +45,9 @@
                 Switch to light mode
               </button>
             </div>
+            <button type="button" id="admin-toggle" class="ghost admin-toggle">
+              Admin
+            </button>
             <button
               type="button"
               id="debug-toggle"
@@ -45,64 +68,136 @@
           </div>
         </header>
 
-        <section class="card">
-          <h2>Connect to Monday</h2>
-          <form id="config-form">
-            <label class="full-span">
-              <span>Monday API token</span>
-              <input
-                type="password"
-                name="token"
-                placeholder="paste your token"
-                required
-              />
-            </label>
-            <label>
-              <span>Workspace</span>
-              <select id="workspace-filter" multiple>
-                <option value="all">All workspaces</option>
-              </select>
-            </label>
-            <label>
-              <span>Board</span>
-              <select id="board-filter" multiple>
-                <option value="all">All boards</option>
-              </select>
-            </label>
-            <label class="checkbox full-span">
-              <span>All dates</span>
-              <input type="checkbox" id="all-data" checked />
-            </label>
-            <label>
-              <span>Start date</span>
-              <input type="date" id="start-date" />
-              <small>Set a range or check All dates.</small>
-            </label>
-            <label>
-              <span>End date</span>
-              <input type="date" id="end-date" />
-            </label>
-            <p class="status" id="status">Enter your token to begin.</p>
-            <div class="actions">
-              <button type="button" id="load-workspaces">Load workspaces</button>
-              <button type="submit" class="primary">Load hours data</button>
-              <button type="button" id="export-btn" disabled>Export CSV</button>
+        <section class="card-grid connect-grid">
+          <section class="card connect-card">
+            <h2>Connect to Monday</h2>
+            <form id="config-form">
+              <label>
+                <span>Workspace</span>
+                <select id="workspace-filter" multiple>
+                  <option value="all">All workspaces</option>
+                </select>
+              </label>
+              <label>
+                <span>Board</span>
+                <select id="board-filter" multiple>
+                  <option value="all">All boards</option>
+                </select>
+              </label>
+              <label class="checkbox full-span">
+                <span>All dates</span>
+                <input type="checkbox" id="all-data" checked />
+              </label>
+              <label>
+                <span>Start date</span>
+                <input type="date" id="start-date" />
+                <small>Set a range or check All dates.</small>
+              </label>
+              <label>
+                <span>End date</span>
+                <input type="date" id="end-date" />
+              </label>
+              <p class="status" id="status">Set your token in Admin to begin.</p>
+              <div class="actions">
+                <button type="button" id="load-workspaces">Load workspaces</button>
+                <button type="submit" class="primary">Load hours data</button>
+                <button type="button" id="export-btn" disabled>Export CSV</button>
+              </div>
+            </form>
+          </section>
+          <section class="card load-summary-card">
+            <div class="load-summary-header">
+              <h2>Load summary</h2>
+              <div class="load-summary-metrics">
+                <div class="load-summary-metric">
+                  <span class="load-summary-label">Load time</span>
+                  <span class="load-summary-value" id="summary-load-time">--</span>
+                </div>
+                <div class="load-summary-metric">
+                  <span class="load-summary-label">Loaded items</span>
+                  <span class="load-summary-value" id="summary-items">0</span>
+                </div>
+                <div class="load-summary-metric">
+                  <span class="load-summary-label">Workspaces</span>
+                  <span class="load-summary-value" id="summary-workspaces">0</span>
+                </div>
+                <div class="load-summary-metric">
+                  <span class="load-summary-label">Boards</span>
+                  <span class="load-summary-value" id="summary-boards">0</span>
+                </div>
+              </div>
             </div>
-          </form>
+            <div class="load-summary-controls">
+              <div class="load-summary-search">
+                <input
+                  type="search"
+                  id="load-summary-search"
+                  placeholder="Search summary"
+                  aria-label="Search load summary"
+                />
+                <button
+                  type="button"
+                  class="icon-button"
+                  id="load-summary-search-btn"
+                  aria-label="Search summary"
+                >
+                  <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+                    <path
+                      d="M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14Zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm7.3 11.9 3.4 3.4-1.4 1.4-3.4-3.4 1.4-1.4Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div class="load-summary-nav">
+                <button
+                  type="button"
+                  class="icon-button"
+                  id="load-summary-prev"
+                  aria-label="Previous match"
+                >
+                  &lt;
+                </button>
+                <button
+                  type="button"
+                  class="icon-button"
+                  id="load-summary-next"
+                  aria-label="Next match"
+                >
+                  &gt;
+                </button>
+              </div>
+            </div>
+            <div class="load-summary" id="load-summary" aria-live="polite">
+              <p class="load-summary-empty" id="load-summary-empty">
+                No load activity yet.
+              </p>
+            </div>
+          </section>
         </section>
 
         <section class="card filters" id="filters-section">
-          <h2>Filters</h2>
+          <div class="card-header">
+            <h2>Filters</h2>
+          </div>
           <div class="filters-grid">
             <label>
               <span>User</span>
-              <select id="user-filter">
+              <select
+                id="user-filter"
+                data-searchable="true"
+                data-search-placeholder="Search users"
+              >
                 <option value="all">All users</option>
               </select>
             </label>
             <label>
               <span>Boards</span>
-              <select id="project-filter">
+              <select
+                id="project-filter"
+                data-searchable="true"
+                data-search-placeholder="Search boards"
+              >
                 <option value="all">All boards</option>
               </select>
             </label>
@@ -111,8 +206,8 @@
               <select id="period-filter">
                 <option value="all">All time</option>
                 <option value="day">Daily</option>
-                <option value="week">Weekly</option>
-                <option value="month" selected>Monthly</option>
+                <option value="week" selected>Weekly</option>
+                <option value="month">Monthly</option>
                 <option value="year">Yearly</option>
               </select>
             </label>
@@ -132,10 +227,16 @@
                 </button>
               </div>
             </div>
-            <label class="checkbox full-span">
-              <span>Show raw time entries only</span>
-              <input type="checkbox" id="raw-entries-only" />
-            </label>
+            <div class="checkbox-row full-span">
+              <label class="checkbox">
+                <span>Show raw time entries only</span>
+                <input type="checkbox" id="raw-entries-only" />
+              </label>
+              <label class="checkbox">
+                <span>Show PTO entries only</span>
+                <input type="checkbox" id="pto-only" />
+              </label>
+            </div>
           </div>
         </section>
 
@@ -183,11 +284,54 @@
           </div>
 
           <div class="card user-totals-card">
-            <div class="card-header">
+            <div class="card-header user-totals-header">
               <div>
                 <h2>User totals</h2>
-                <p class="subtitle">Totals for the current filters.</p>
               </div>
+              <div class="user-totals-actions">
+                <button
+                  type="button"
+                  id="user-totals-export"
+                  class="icon-button"
+                  aria-label="Export user totals"
+                >
+                  <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+                    <path
+                      d="M12 3a1 1 0 0 1 1 1v8.17l2.6-2.59a1 1 0 0 1 1.4 1.42l-4.3 4.3a1 1 0 0 1-1.4 0l-4.3-4.3a1 1 0 1 1 1.4-1.42L11 12.17V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  id="user-total-settings-btn"
+                  class="icon-button"
+                  aria-label="Configure user total thresholds"
+                >
+                  <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+                    <path
+                      d="M19.14 12.94c.03-.31.05-.63.05-.94s-.02-.63-.05-.94l2.11-1.65a.5.5 0 0 0 .12-.65l-2-3.46a.5.5 0 0 0-.6-.22l-2.49 1a7.1 7.1 0 0 0-1.63-.94l-.38-2.65A.5.5 0 0 0 13 2h-2a.5.5 0 0 0-.5.42l-.38 2.65c-.59.23-1.14.54-1.63.94l-2.49-1a.5.5 0 0 0-.6.22l-2 3.46a.5.5 0 0 0 .12.65l2.11 1.65c-.03.31-.05.63-.05.94s.02.63.05.94L3.52 14.59a.5.5 0 0 0-.12.65l2 3.46a.5.5 0 0 0 .6.22l2.49-1c.49.4 1.04.71 1.63.94l.38 2.65A.5.5 0 0 0 11 22h2a.5.5 0 0 0 .5-.42l.38-2.65c.59-.23 1.14-.54 1.63-.94l2.49 1a.5.5 0 0 0 .6-.22l2-3.46a.5.5 0 0 0-.12-.65l-2.11-1.65ZM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="user-totals-controls">
+              <label class="team-filter compact">
+                <span>Teams</span>
+                <select id="team-filter" multiple>
+                  <option value="all">No grouping</option>
+                </select>
+              </label>
+              <label class="checkbox compact">
+                <span>Show all users</span>
+                <input type="checkbox" id="show-all-users" />
+              </label>
+              <label class="checkbox compact">
+                <span>Below threshold only</span>
+                <input type="checkbox" id="under-threshold-only" />
+              </label>
             </div>
             <div class="user-totals" id="user-totals"></div>
           </div>
@@ -228,6 +372,106 @@
       <div class="loading-indicator" id="loading-indicator">
         <span class="spinner" aria-hidden="true"></span>
         Loading data from Monday...
+      </div>
+    </div>
+
+    <div class="modal" id="admin-modal" aria-hidden="true">
+      <div class="modal-backdrop" data-close="true"></div>
+      <div class="modal-card admin-modal" role="dialog" aria-modal="true" aria-labelledby="admin-title">
+        <div class="modal-header">
+          <div>
+            <h3 id="admin-title">Admin settings</h3>
+            <p class="subtitle">Manage tokens and PTO sources for this device.</p>
+          </div>
+          <button type="button" class="icon-button" data-close="true" aria-label="Close admin settings">
+            x
+          </button>
+        </div>
+        <form id="admin-form" class="modal-form admin-form">
+          <label class="full-span">
+            <span>Monday API token</span>
+            <div class="token-input">
+              <input type="password" id="admin-monday-token" autocomplete="off" />
+              <button
+                type="button"
+                class="icon-button token-visibility-toggle"
+                id="admin-token-visibility"
+                aria-pressed="false"
+                aria-label="Show API token"
+              >
+                <svg viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+                  <path
+                    class="icon-on"
+                    d="M12 5c4.77 0 8.73 3.11 10 7-1.27 3.89-5.23 7-10 7s-8.73-3.11-10-7c1.27-3.89 5.23-7 10-7Zm0 3.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    class="icon-off"
+                    d="M4.2 4.2 19.8 19.8 18.4 21.2l-2.24-2.24A10.9 10.9 0 0 1 12 19c-4.77 0-8.73-3.11-10-7a10.9 10.9 0 0 1 4.44-5.6L2.8 2.8 4.2 4.2Zm5.6 5.6a3.5 3.5 0 0 0 4.4 4.4l-4.4-4.4Zm7.83 7.83-2.05-2.05a5.8 5.8 0 0 1-7.16-7.16L6.37 6.37A9 9 0 0 0 3.7 12c1.1 3.02 4.36 5.5 8.3 5.5 1.71 0 3.32-.43 4.63-1.17ZM12 6.5c-.68 0-1.32.18-1.88.5l-1.5-1.5A7.7 7.7 0 0 1 12 4.5c3.94 0 7.2 2.48 8.3 5.5a9 9 0 0 1-1.8 3.05l-2.12-2.12A3.5 3.5 0 0 0 12 6.5Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </button>
+            </div>
+          </label>
+          <label>
+            <span>Projector PTO JSON URL</span>
+            <input type="url" id="pto-json-url" placeholder="https://..." />
+          </label>
+          <label class="full-span">
+            <span>Upload PTO CSV</span>
+            <input type="file" id="pto-csv-upload" accept=".csv,text/csv" />
+            <small>Upload a report export to merge PTO into totals.</small>
+          </label>
+          <label class="checkbox compact full-span">
+            <span>Remember uploaded CSV for next load</span>
+            <input type="checkbox" id="pto-remember-upload" />
+          </label>
+          <label class="checkbox compact full-span">
+            <span>Load PTO on startup</span>
+            <input type="checkbox" id="pto-auto-load" />
+          </label>
+          <p class="status full-span" id="admin-status">PTO data is not loaded.</p>
+          <div class="modal-actions full-span">
+            <button type="button" class="ghost" id="admin-load-pto">
+              Load PTO now
+            </button>
+            <button type="submit" class="primary">Save settings</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="threshold-modal" aria-hidden="true">
+      <div class="modal-backdrop" data-close="true"></div>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="threshold-title">
+        <div class="modal-header">
+          <div>
+            <h3 id="threshold-title">User total thresholds</h3>
+            <p class="subtitle">Set targets used for the thermometer bars.</p>
+          </div>
+          <button type="button" class="icon-button" data-close="true" aria-label="Close threshold settings">
+            &times;
+          </button>
+        </div>
+        <form id="threshold-form" class="modal-form">
+          <label>
+            <span>Daily threshold (hours)</span>
+            <input type="number" id="threshold-day" min="0" step="0.25" />
+          </label>
+          <label>
+            <span>Weekly threshold (hours)</span>
+            <input type="number" id="threshold-week" min="0" step="0.25" />
+          </label>
+          <label>
+            <span>Monthly threshold (hours)</span>
+            <input type="number" id="threshold-month" min="0" step="0.25" />
+          </label>
+          <div class="modal-actions">
+            <button type="button" class="ghost" data-close="true">Cancel</button>
+            <button type="submit" class="primary">Save thresholds</button>
+          </div>
+        </form>
       </div>
     </div>
   </body>
